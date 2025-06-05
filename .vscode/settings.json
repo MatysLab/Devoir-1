@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "generateur.h": "c",
+        "stdlib.h": "c",
+        "time.h": "c"
+    }
+}

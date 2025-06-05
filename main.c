@@ -1,0 +1,382 @@
+/*****************************************************/
+//  Matys L'Abbée
+//  Été 2025 INF-147
+//  Manipulation de bits sur 32 générateurs
+//  Contraintes : Maximum 2 contigues à 1
+/*****************************************************/
+
+#include "oper_bits.c"
+#include <assert.h>
+#include "gabarit.c"
+
+/*****************************************************/
+/*              CONSTANTES ET DÉFINITIONS            */
+/*****************************************************/
+
+#define TEST_MODE 0
+int N = 32;
+int K = 12;
+#define nbr_loops 1000
+unsigned int bris_gen_ions = 0;
+
+/*****************************************************/
+/*         DÉCLARATIONS DES FONCTIONS UTILISÉES      */
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Vérifie si trois bits consécutifs à 1 existent
+ PARAMÈTRE : etats_generateur - valeur sur 32 bits
+ RETOUR : 1 si trois bits consécutifs à 1 sont détectés, sinon 0
+ */
+int isContigue(unsigned int etats_generateur);
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Retourne les positions disponibles (bits à 0) qui peuvent être mis à 1
+ sans créer 3 bits à 1 consécutifs.
+ PARAMÈTRE : unsigned int etat_bits (32 bits)
+ RETOUR : une valeur avec les positions valides à 1
+ */
+unsigned int get_bits_dispo(unsigned int etat_bits);
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Sélectionne un bit à 1 de manière aléatoire dans un nombre
+ PARAMÈTRE : unsigned int etat_bits (32 bits)
+ RETOUR : Index du bit sélectionné ou -1 si aucun disponible
+ */
+int choix_alea_bit1(unsigned int etat_bits);
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Initialise un générateur avec une configuration valide (pas de 3 bits à 1 consécutifs)
+ RETOUR : état initial du générateur
+ */
+unsigned int initGenerateur( void );
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Permute un bit inactif (0 valide) avec un bit actif (1)
+ PARAMÈTRE : etat_gen_ions - état actuel
+ RETOUR : nouvel état après permutation
+ */
+unsigned int permuter_bits( unsigned int etat_gen_ions );
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Teste la fonction isContigue pour vérifier si elle détecte correctement
+ la présence de trois bits consécutifs à 1 dans une séquence de 32 bits.
+
+ */
+void testIsContigue(void);
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Teste la fonction get_bits_dispo pour s'assurer qu'elle retourne
+ correctement les positions disponibles (bits à 0) pouvant être activées
+ sans enfreindre la contrainte de contiguité (pas plus de 2 bits à 1 consécutifs).
+ */
+void testGet_bits_dispo(void);
+/*****************************************************/
+
+/*****************************************************/
+/*
+ Teste la fonction choix_alea_bit1 pour vérifier qu'elle retourne
+ un index valide d'un bit à 1 aléatoirement,
+ ou -1 si aucun bit n'est actif.
+ */
+void testChoix_alea_bit1(void);
+/*****************************************************/
+
+/*****************************************************/
+/*
+Verifie si meme index bit a 1 simultanne
+ Retourne 1 success
+ retourne 0 Fail
+ */
+int valider_bris( unsigned int arrBits1 , unsigned int arrBits2 );
+/*****************************************************/
+
+/*****************************************************/
+/*
+Test la fonction Valider_bris
+ */
+void testValider_bris( void );
+/*****************************************************/
+
+/*****************************************************/
+/*
+Verifie que K bit sont inferieure a N
+ */
+int valider_etatK (unsigned int etat_gen_ions);
+/*****************************************************/
+
+/*****************************************************/
+/*
+Test la fonction de verification de K bit dans Etats gen ion
+ */
+void testvalider_etatK( void );
+/*****************************************************/
+
+/*****************************************************/
+/*
+ */
+unsigned int get_bits_dispo2 ( unsigned int etat_bits, unsigned int bris_ions );
+/*****************************************************/
+
+/*****************************************************/
+/*      FONCTIONS DE TRAITEMENT DES BITS             */
+/*****************************************************/
+
+/*****************************************************/
+int isContigue(unsigned int etats_generateur)
+{
+    // Si un des generateurs est contigus, return index
+    for (unsigned int index = 0, count = 0; index < 32; ++index)
+    {
+        if (get_bit(etats_generateur, index))
+            ++count;
+        else
+            count = 0;
+
+        if (count == 3)
+            return 1;
+    }
+    // Si aucun generateurs est contigus, return -1
+    return 0;
+}
+/*****************************************************/
+
+/*****************************************************/
+unsigned int get_bits_dispo(unsigned int etat_bits)
+{
+    unsigned int bits_possibles = 0;
+
+    if (etat_bits == 0)
+        return 0xFFFFFFFF;
+    else if (etat_bits == 0xFFFFFFFF)
+        return 0;
+
+    for (int i = 0; i < N; ++i)
+    {
+        if (!get_bit(etat_bits, i) && !isContigue(etat_bits + (1 << i)))
+        {
+            bits_possibles = set_bit(bits_possibles, i);
+        }
+    }
+
+    return bits_possibles;
+}
+/*****************************************************/
+
+/*****************************************************/
+int choix_alea_bit1(unsigned int etat_bits)
+{
+    if (!etat_bits)
+        return -1;
+
+    unsigned int index = 0;
+    do
+    {
+        index = randi(N) - 1;
+    } while (!get_bit(etat_bits, index));
+
+    return index;
+}
+/*****************************************************/
+
+/*****************************************************/
+unsigned int initGenerateur( void )
+{
+    unsigned int config_initiale = 0;
+    unsigned int bits_dispo = get_bits_dispo ( config_initiale );
+    unsigned int ordre = 0;
+
+    int k_count = 0;
+
+    while ( bits_dispo && k_count != K)
+    {
+        ordre = choix_alea_bit1( bits_dispo );
+        assert ( ordre >= 0 && ordre < N );
+        config_initiale += (1 << ordre);
+
+        ++k_count;
+
+        bits_dispo = get_bits_dispo ( config_initiale );
+    }
+    assert ( !isContigue ( config_initiale ) );
+
+    return config_initiale;
+}
+/*****************************************************/
+
+/*****************************************************/
+unsigned int permuter_bits( unsigned int etat_gen_ions )
+{
+    //Choisir un bit disponible 0
+    int posInactive = choix_alea_bit1( get_bits_dispo ( etat_gen_ions ) );
+    assert( posInactive >= 0);
+    //Choisir un bit aleatoire 1
+    int posActive = choix_alea_bit1 ( etat_gen_ions );
+    assert( posInactive >= 0);
+    //Permuter les bits
+    etat_gen_ions = flip_bit( etat_gen_ions, posInactive);
+    etat_gen_ions = flip_bit( etat_gen_ions, posActive);
+
+    return etat_gen_ions;
+}
+/*****************************************************/
+
+/*****************************************************/
+int valider_bris( unsigned int arrBits1 , unsigned int arrBits2 )
+{
+    return arrBits1 & arrBits2 ? 0 : 1;
+}
+/*****************************************************/
+
+/*****************************************************/
+int valider_etatK (unsigned int etat_gen_ions)
+{
+    int k_count = 0;
+    for ( int i = 0; i < 32; ++i)
+    {
+        if ( get_bit(etat_gen_ions, i) )
+        {
+            ++k_count;
+            if ( i > N )
+                return 0;
+        }
+    }
+    return k_count == K && k_count < N ? 1 : 0;
+}
+/*****************************************************/
+
+/*****************************************************/
+unsigned int get_bits_dispo2 ( unsigned int etat_bits, unsigned int bris_ions )
+{
+    unsigned int bits_possibles = 0;
+    unsigned int bit_unavaible = etat_bits | bris_ions;
+
+    if (bit_unavaible == 0)
+        return 0xFFFFFFFF;
+    else if (bit_unavaible == 0xFFFFFFFF)
+        return 0;
+
+    for (int i = 0; i < N; ++i)
+    {
+        if (!get_bit(bit_unavaible, i) && !isContigue(bit_unavaible + (1 << i)))
+        {
+            bits_possibles = set_bit(bits_possibles, i);
+        }
+    }
+
+    return bits_possibles;
+}
+/*****************************************************/
+
+/*****************************************************/
+/*              FONCTIONS DE TEST                    */
+/*****************************************************/
+
+/*****************************************************/
+void testIsContigue(void)
+{
+    // Test si aucun contigues
+    assert(isContigue(0b1101100110001000110010011010110) == 0);
+
+    // Test si un contigues
+    assert(isContigue(0b1101100110001000110010011110110) == 1);
+}
+/*****************************************************/
+
+/*****************************************************/
+void testchoix_alea_bit1(void)
+{
+    assert(choix_alea_bit1(0) == -1);
+    assert(choix_alea_bit1(0x1) == 0);
+}
+/*****************************************************/
+
+/*****************************************************/
+void testGet_bits_dispo(void)
+{
+    unsigned int disposition = 9;
+    assert( get_bits_dispo( disposition ) == ~disposition);
+}
+/*****************************************************/
+
+/*****************************************************/
+void testValider_bris( void )
+{
+    assert(valider_bris(0x01, 0x01) == 0);
+    assert(valider_bris(0x01, 0x02) == 1);
+}
+/*****************************************************/
+
+/*****************************************************/
+void testvalider_etatK( void )
+{
+    K = 15;
+    assert( valider_etatK(0b111111111111111) );
+    K = 20;
+    assert( valider_etatK(0b11011011011011011011011011011) );
+    assert( valider_etatK(0b1101101101101101101101101101101) == 0);
+}
+/*****************************************************/
+
+/*****************************************************/
+/*              MAIN POUR TESTS UNITAIRES            */
+/*****************************************************/
+#if TEST_MODE == 1
+int main(void)
+{
+    srand_sys();
+    testIsContigue();
+    testchoix_alea_bit1();
+    testGet_bits_dispo();
+    testValider_bris();
+    testvalider_etatK();
+    return 0;
+}
+#endif
+/*****************************************************/
+
+/*****************************************************/
+/*                 MAIN PRINCIPAL                    */
+/*****************************************************/
+#if TEST_MODE == 0
+int main(void)
+{
+    srand_sys();
+
+    assert( ( 18 <= N && N <= 32 ) );
+    assert( ( ( 0.28 * N ) <= K ) );
+    assert(( K <= ( 0.48 * N ) ) );
+
+    unsigned int etats_gen_ions = initGenerateur();
+    voir_bits( etats_gen_ions );
+
+    for ( int i = 0; i < nbr_loops; ++i)
+    {
+
+        etats_gen_ions = permuter_bits( etats_gen_ions );
+        assert( valider_bris( etats_gen_ions, bris_gen_ions ) );
+        assert( valider_etatK( etats_gen_ions ) );
+    }
+    voir_bits( etats_gen_ions );
+
+    return 0;
+}
+#endif
+/*****************************************************/
+
+/*****************************************************/
+// FIN DU FICHIER
+/*****************************************************/
