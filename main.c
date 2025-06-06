@@ -13,7 +13,8 @@
 /*              CONSTANTES ET DÉFINITIONS            */
 /*****************************************************/
 
-#define TEST_MODE 1
+#define TEST_MODE 0
+#define main_selector 0
 int N = 32;
 int K = 12;
 
@@ -410,7 +411,41 @@ int main(void)
 /*****************************************************/
 /*                 MAIN PRINCIPAL                    */
 /*****************************************************/
-#if TEST_MODE == 0
+#if TEST_MODE == 0 && main_selector == 0
+int main(void)
+{
+    // Demarage du system aleatoire
+    srand_sys();
+
+    // verification des entrees N et K
+    assert( ( 18 <= N && N <= 32 ) );
+    assert( ( ( 0.28 * N ) <= K ) );
+    assert(( K <= ( 0.48 * N ) ) );
+
+    //Initialisation du generateur ( Randomizer )
+    unsigned int etats_gen_ions = initGenerateur();
+    unsigned int bris_gen_ions = 0;
+    voir_bits( etats_gen_ions );
+
+    //Loop de permutation de bits
+    for ( int i = 0; i < nbr_loops; ++i)
+    {
+
+        etats_gen_ions = permuter_bits( etats_gen_ions );
+        assert( valider_bris( etats_gen_ions, bris_gen_ions ) );
+        assert( valider_etatK( etats_gen_ions ) );
+
+        if ( nbr_loops % PERIODE_REPARATION == 0) assert( reparation_bris_gen >= 0 );
+    }
+    //Affichage de bits
+    voir_bits( etats_gen_ions );
+
+    return 0;
+}
+#endif
+/*****************************************************/
+
+#if TEST_MODE == 0 && main_selector == 1
 int main(void)
 {
     // Demarage du system aleatoire
