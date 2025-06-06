@@ -307,6 +307,9 @@ int controler_bris ( unsigned int * etat_bits, unsigned int * bris_gen )
 
 int reparation_bris_gen(unsigned int *bris_gen)
 {
+    if (bris_gen == NULL)
+            return -1;
+
     int nb_bris = 0;
 
     for (int i = 0; i < 32; ++i)
@@ -430,6 +433,8 @@ int main(void)
         etats_gen_ions = permuter_bits( etats_gen_ions );
         assert( valider_bris( etats_gen_ions, bris_gen_ions ) );
         assert( valider_etatK( etats_gen_ions ) );
+
+        if ( nbr_loops % PERIODE_REPARATION == 0) assert( reparation_bris_gen >= 0 );
     }
     //Affichage de bits
     voir_bits( etats_gen_ions );
