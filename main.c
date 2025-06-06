@@ -18,6 +18,7 @@ int N = 32;
 int K = 12;
 
 #define nbr_loops 1000
+#define PERIODE_REPARATION  50
 #define PROB_BRIS 0.5f
 /*****************************************************/
 /*         DÉCLARATIONS DES FONCTIONS UTILISÉES      */
@@ -131,7 +132,9 @@ void testvalider_etatK( void );
 unsigned int get_bits_dispo2 ( unsigned int etat_bits, unsigned int bris_ions );
 /*****************************************************/
 int controler_bris ( unsigned int * etat_bits, unsigned int * bris_gen );
+int permuter_bit ( unsigned int * etat_bits, unsigned int bris_gen );
 
+int reparation_bris_gen ( unsigned int * bris_gen);
 
 /*****************************************************/
 /*      FONCTIONS DE TRAITEMENT DES BITS             */
@@ -301,6 +304,22 @@ int controler_bris ( unsigned int * etat_bits, unsigned int * bris_gen )
     }
     return 1;
 }
+
+int reparation_bris_gen(unsigned int *bris_gen)
+{
+    int nb_bris = 0;
+
+    for (int i = 0; i < 32; ++i)
+    {
+        nb_bris += get_bit(*bris_gen, i) ? 1 : 0;
+    }
+
+    *bris_gen = 0;
+
+    //Retourne le nombre de bits repare
+    return nb_bris;
+}
+
 /*****************************************************/
 
 int permuter_bit ( unsigned int * etat_bits, unsigned int bris_gen )
