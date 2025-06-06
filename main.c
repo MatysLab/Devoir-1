@@ -13,12 +13,12 @@
 /*              CONSTANTES ET DÉFINITIONS            */
 /*****************************************************/
 
-#define TEST_MODE 0
+#define TEST_MODE 1
 int N = 32;
 int K = 12;
-#define nbr_loops 1000
-unsigned int bris_gen_ions = 0;
 
+#define nbr_loops 1000
+#define PROB_BRIS 0.5f
 /*****************************************************/
 /*         DÉCLARATIONS DES FONCTIONS UTILISÉES      */
 /*****************************************************/
@@ -130,6 +130,8 @@ void testvalider_etatK( void );
  */
 unsigned int get_bits_dispo2 ( unsigned int etat_bits, unsigned int bris_ions );
 /*****************************************************/
+int controler_bris ( unsigned int * etat_bits, unsigned int * bris_gen );
+
 
 /*****************************************************/
 /*      FONCTIONS DE TRAITEMENT DES BITS             */
@@ -280,6 +282,40 @@ unsigned int get_bits_dispo2 ( unsigned int etat_bits, unsigned int bris_ions )
     return bits_possibles;
 }
 /*****************************************************/
+int controler_bris ( unsigned int * etat_bits, unsigned int * bris_gen )
+{
+    
+    for ( int i = 0; i < N; i++)
+    {
+        if ( get_bit(*etat_bits, i) && !get_bit(*bris_gen, i) && randf() < PROB_BRIS ){
+            *etat_bits = clear_bit( *etat_bits, i );
+            *bris_gen = set_bit(*bris_gen, i );
+
+            int index = choix_alea_bit1( get_bits_dispo2( *etat_bits, *bris_gen ) );
+
+            if ( index != -1 )
+                *etat_bits = set_bit( *etat_bits, index );
+            else
+                return 0;
+        }
+    }
+    return 1;
+}
+/*****************************************************/
+
+int permuter_bit ( unsigned int * etat_bits, unsigned int bris_gen )
+{
+    unsigned int  index_bit1 = choix_alea_bit1( *etat_bits );
+    unsigned int index_bit0 = choix_alea_bit1( get_bits_dispo2( *etat_bits, bris_gen ) );
+
+    if ( index_bit1 != -1 && index_bit0 != -1 )
+    {
+        *etat_bits = clear_bit( *etat_bits, index_bit1 );
+        *etat_bits = set_bit( *etat_bits, index_bit0);
+        return 1;
+    }else
+        return 0;
+}
 
 /*****************************************************/
 /*              FONCTIONS DE TEST                    */
@@ -343,6 +379,7 @@ int main(void)
     testGet_bits_dispo();
     testValider_bris();
     testvalider_etatK();
+    testControler_bris();
     return 0;
 }
 #endif
@@ -354,15 +391,20 @@ int main(void)
 #if TEST_MODE == 0
 int main(void)
 {
+    // Demarage du system aleatoire
     srand_sys();
 
+    // verification des entrees N et K
     assert( ( 18 <= N && N <= 32 ) );
     assert( ( ( 0.28 * N ) <= K ) );
     assert(( K <= ( 0.48 * N ) ) );
 
+    //Initialisation du generateur ( Randomizer )
     unsigned int etats_gen_ions = initGenerateur();
+    unsigned int bris_gen_ions = 0;
     voir_bits( etats_gen_ions );
 
+    //Loop de permutation de bits
     for ( int i = 0; i < nbr_loops; ++i)
     {
 
@@ -370,6 +412,7 @@ int main(void)
         assert( valider_bris( etats_gen_ions, bris_gen_ions ) );
         assert( valider_etatK( etats_gen_ions ) );
     }
+    //Affichage de bits
     voir_bits( etats_gen_ions );
 
     return 0;
