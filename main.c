@@ -18,7 +18,6 @@
 int N = 32;
 int K = 12;
 
-#define nbr_loops 1000
 #define PERIODE_REPARATION  50
 #define PROB_BRIS 0.5f
 /*****************************************************/
@@ -425,6 +424,9 @@ int main(void)
     //Initialisation du generateur ( Randomizer )
     unsigned int etats_gen_ions = initGenerateur();
     unsigned int bris_gen_ions = 0;
+
+    int nbr_loops = 1000;  
+
     voir_bits( etats_gen_ions );
 
     //Loop de permutation de bits
@@ -432,10 +434,14 @@ int main(void)
     {
 
         etats_gen_ions = permuter_bits( etats_gen_ions );
+
+        assert(controler_bris(&etats_gen_ions, &bris_gen_ions));
+
         assert( valider_bris( etats_gen_ions, bris_gen_ions ) );
         assert( valider_etatK( etats_gen_ions ) );
 
-        if ( nbr_loops % PERIODE_REPARATION == 0) assert( reparation_bris_gen >= 0 );
+        if( i % PERIODE_REPARATION == 0 && bris_gen_ions > 0)
+            assert(reparation_bris_gen(&bris_gen_ions) > 0);
     }
     //Affichage de bits
     voir_bits( etats_gen_ions );
