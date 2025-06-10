@@ -14,12 +14,13 @@
 /*****************************************************/
 
 #define TEST_MODE 0
-#define main_selector 0
+#define main_selector 1
 int N = 32;
 int K = 12;
 
 #define PERIODE_REPARATION  50
 #define PROB_BRIS 0.5f
+#define MAX_ITER 2000
 /*****************************************************/
 /*         DÉCLARATIONS DES FONCTIONS UTILISÉES      */
 /*****************************************************/
@@ -413,7 +414,7 @@ int main(void)
 #if TEST_MODE == 0 && main_selector == 0
 int main(void)
 {
-    // Demarage du system aleatoire
+    // Demarage du systeme aleatoire
     srand_sys();
 
     // verification des entrees N et K
@@ -421,30 +422,37 @@ int main(void)
     assert( ( ( 0.28 * N ) <= K ) );
     assert(( K <= ( 0.48 * N ) ) );
 
-    //Initialisation du generateur ( Randomizer )
+    // Initialisation du generateur (Randomizer)
     unsigned int etats_gen_ions = initGenerateur();
     unsigned int bris_gen_ions = 0;
+    int nb_passages = 0;
+    int nbr_loops = 1000;
 
-    int nbr_loops = 1000;  
+    voir_bits(etats_gen_ions);
 
-    voir_bits( etats_gen_ions );
-
-    //Loop de permutation de bits
-    for ( int i = 0; i < nbr_loops; ++i)
+    // Boucle principale de simulation
+    for (int i = 0; i < nbr_loops; ++i)
     {
+        nb_passages++;
+        etats_gen_ions = permuter_bits(etats_gen_ions);
 
-        etats_gen_ions = permuter_bits( etats_gen_ions );
+        if (!controler_bris(&etats_gen_ions, &bris_gen_ions))
+            break;
+        if (!valider_bris(etats_gen_ions, bris_gen_ions))
+            break;
+        if (!valider_etatK(etats_gen_ions))
+            break;
 
-        assert(controler_bris(&etats_gen_ions, &bris_gen_ions));
-
-        assert( valider_bris( etats_gen_ions, bris_gen_ions ) );
-        assert( valider_etatK( etats_gen_ions ) );
-
-        if( i % PERIODE_REPARATION == 0 && bris_gen_ions > 0)
-            assert(reparation_bris_gen(&bris_gen_ions) > 0);
+        if (i % PERIODE_REPARATION == 0 && bris_gen_ions > 0)
+        {
+            if (reparation_bris_gen(&bris_gen_ions) <= 0)
+                break;
+        }
     }
-    //Affichage de bits
-    voir_bits( etats_gen_ions );
+    // Affichage de bits
+    voir_bits(etats_gen_ions);
+    // Affichage du nombre de passages
+    printf("Nombre de passages effectues : %d\n", nb_passages);
 
     return 0;
 }
@@ -452,33 +460,65 @@ int main(void)
 /*****************************************************/
 
 #if TEST_MODE == 0 && main_selector == 1
+#include <limits.h>
+#define MAX_REPETITION 1000
+
 int main(void)
 {
-    // Demarage du system aleatoire
     srand_sys();
+    assert((18 <= N && N <= 32));
+    assert(((0.28 * N) <= K));
+    assert((K <= (0.48 * N)));
 
-    // verification des entrees N et K
-    assert( ( 18 <= N && N <= 32 ) );
-    assert( ( ( 0.28 * N ) <= K ) );
-    assert(( K <= ( 0.48 * N ) ) );
+    int resultats[MAX_REPETITION];
+    int nb_repetitions = 0;
+    int min_passages = INT_MAX;
+    int max_passages = 0;
+    long somme_passages = 0;
 
-    //Initialisation du generateur ( Randomizer )
-    unsigned int etats_gen_ions = initGenerateur();
-    unsigned int bris_gen_ions = 0;
-    voir_bits( etats_gen_ions );
-
-    //Loop de permutation de bits
-    for ( int i = 0; i < nbr_loops; ++i)
+    for (nb_repetitions = 0; nb_repetitions < MAX_REPETITION; ++nb_repetitions)
     {
+        unsigned int etats_gen_ions = initGenerateur();
+        unsigned int bris_gen_ions = 0;
+        int nb_passages = 0;
+        int success = 1;
 
-        etats_gen_ions = permuter_bits( etats_gen_ions );
-        assert( valider_bris( etats_gen_ions, bris_gen_ions ) );
-        assert( valider_etatK( etats_gen_ions ) );
+        for (int i = 0; i < MAX_ITER; ++i)
+        {
+            nb_passages++;
 
-        if ( nbr_loops % PERIODE_REPARATION == 0) assert( reparation_bris_gen >= 0 );
+            if (!controler_bris(&etats_gen_ions, &bris_gen_ions)) { success = 0; break; }
+            if (permuter_bit(&etats_gen_ions, bris_gen_ions) == 0) { success = 0; break; }
+            if (!valider_bris(etats_gen_ions, bris_gen_ions)) { success = 0; break; }
+            if (!valider_etatK(etats_gen_ions)) { success = 0; break; }
+            if (i % PERIODE_REPARATION == 0 && bris_gen_ions > 0)
+                if (reparation_bris_gen(&bris_gen_ions) <= 0) { success = 0; break; }
+
+            if ((i > 0) && (i % (MAX_ITER / 10) == 0)) {
+                printf("[Sim %d] Passage %d\n", nb_repetitions+1, nb_passages);
+                printf("  etats_gen_ions: %u\n", etats_gen_ions);
+                printf("  bris_gen_ions: %u\n", bris_gen_ions);
+            }
+        }
+        resultats[nb_repetitions] = nb_passages;
+        somme_passages += nb_passages;
+        if (nb_passages < min_passages) min_passages = nb_passages;
+        if (nb_passages > max_passages) max_passages = nb_passages;
+        if ((nb_repetitions+1) % (MAX_REPETITION/10) == 0) {
+            printf("---\nSimulation %d/%d\n", nb_repetitions+1, MAX_REPETITION);
+            printf("Constantes: N=%d, K=%d, PROB_BRIS=%.2f, PERIODE_REPARATION=%d, MAX_ITER=%d\n", N, K, PROB_BRIS, PERIODE_REPARATION, MAX_ITER);
+            printf("  Dernier etats_gen_ions: %u\n", etats_gen_ions);
+            printf("  Dernier bris_gen_ions: %u\n", bris_gen_ions);
+            printf("  Dernier nb_passages: %d\n", nb_passages);
+        }
     }
-    //Affichage de bits
-    voir_bits( etats_gen_ions );
+    printf("=========================\n");
+    printf("Constantes: N=%d, K=%d, PROB_BRIS=%.2f, PERIODE_REPARATION=%d, MAX_ITER=%d\n", N, K, PROB_BRIS, PERIODE_REPARATION, MAX_ITER);
+    printf("Statistiques sur %d simulations :\n", MAX_REPETITION);
+    printf("  Moyenne : %.2f\n", (double)somme_passages / MAX_REPETITION);
+    printf("  Minimum : %d\n", min_passages);
+    printf("  Maximum : %d\n", max_passages);
+    printf("=========================\n");
 
     return 0;
 }
