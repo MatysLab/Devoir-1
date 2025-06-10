@@ -25,48 +25,39 @@ int K = 12;
 /*         DÉCLARATIONS DES FONCTIONS UTILISÉES      */
 /*****************************************************/
 
-/*****************************************************/
-/*
- Vérifie si trois bits consécutifs à 1 existent
- PARAMÈTRE : etats_generateur - valeur sur 32 bits
- RETOUR : 1 si trois bits consécutifs à 1 sont détectés, sinon 0
- */
+/*=========================================================
+  isContigue vérifie si trois bits consécutifs à 1 existent
+  PARAMETRES : etats_generateur - valeur sur 32 bits
+  RETOUR : 1 si trois bits consécutifs à 1 sont détectés, sinon 0
+*/
 int isContigue(unsigned int etats_generateur);
-/*****************************************************/
 
-/*****************************************************/
-/*
- Retourne les positions disponibles (bits à 0) qui peuvent être mis à 1
- sans créer 3 bits à 1 consécutifs.
- PARAMÈTRE : unsigned int etat_bits (32 bits)
- RETOUR : une valeur avec les positions valides à 1
- */
+/*=========================================================
+  get_bits_dispo retourne les positions disponibles (bits à 0) qui peuvent être mises à 1
+  sans créer 3 bits à 1 consécutifs.
+  PARAMETRES : etat_bits - unsigned int (32 bits)
+  RETOUR : une valeur avec les positions valides à 1
+*/
 unsigned int get_bits_dispo(unsigned int etat_bits);
-/*****************************************************/
 
-/*****************************************************/
-/*
- Sélectionne un bit à 1 de manière aléatoire dans un nombre
- PARAMÈTRE : unsigned int etat_bits (32 bits)
- RETOUR : Index du bit sélectionné ou -1 si aucun disponible
- */
+/*=========================================================
+  choix_alea_bit1 retourne la position du bit à 1 choisi aléatoirement parmi les bits à 1
+  PARAMETRES : etat_bits - unsigned int (32 bits)
+  RETOUR : la position du bit à 1 choisi ou -1 si aucun bit à 1
+*/
 int choix_alea_bit1(unsigned int etat_bits);
-/*****************************************************/
 
-/*****************************************************/
-/*
- Initialise un générateur avec une configuration valide (pas de 3 bits à 1 consécutifs)
- RETOUR : état initial du générateur
- */
+/*=========================================================
+  initGenerateur initialise le générateur avec une configuration valide
+  RETOUR : la configuration initiale (unsigned int)
+*/
 unsigned int initGenerateur( void );
-/*****************************************************/
 
-/*****************************************************/
-/*
- Permute un bit inactif (0 valide) avec un bit actif (1)
- PARAMÈTRE : etat_gen_ions - état actuel
- RETOUR : nouvel état après permutation
- */
+/*=========================================================
+  permuter_bits permute un bit inactif (0 valide) avec un bit actif (1)
+  PARAMETRES : etat_gen_ions - état actuel
+  RETOUR : le nouvel état après permutation
+*/
 unsigned int permuter_bits( unsigned int etat_gen_ions );
 /*****************************************************/
 
@@ -74,8 +65,7 @@ unsigned int permuter_bits( unsigned int etat_gen_ions );
 /*
  Teste la fonction isContigue pour vérifier si elle détecte correctement
  la présence de trois bits consécutifs à 1 dans une séquence de 32 bits.
-
- */
+*/
 void testIsContigue(void);
 /*****************************************************/
 
@@ -84,7 +74,7 @@ void testIsContigue(void);
  Teste la fonction get_bits_dispo pour s'assurer qu'elle retourne
  correctement les positions disponibles (bits à 0) pouvant être activées
  sans enfreindre la contrainte de contiguité (pas plus de 2 bits à 1 consécutifs).
- */
+*/
 void testGet_bits_dispo(void);
 /*****************************************************/
 
@@ -93,7 +83,7 @@ void testGet_bits_dispo(void);
  Teste la fonction choix_alea_bit1 pour vérifier qu'elle retourne
  un index valide d'un bit à 1 aléatoirement,
  ou -1 si aucun bit n'est actif.
- */
+*/
 void testChoix_alea_bit1(void);
 /*****************************************************/
 
